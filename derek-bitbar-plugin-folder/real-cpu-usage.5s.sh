@@ -1,0 +1,1 @@
+/Users/dliu01/bitbar-plugins/System/real-cpu-usage.5s.sh
