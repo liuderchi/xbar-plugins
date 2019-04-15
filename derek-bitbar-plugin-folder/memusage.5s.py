@@ -1,0 +1,1 @@
+/Users/dliu01/bitbar-plugins/System/memusage.5s.py
