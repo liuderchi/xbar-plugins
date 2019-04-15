@@ -7,9 +7,19 @@
 # <xbar.desc>Shows the current system memmory usage.</xbar.desc>
 # <xbar.dependencies>python</xbar.dependencies>
 # <xbar.abouturl>https://github.com/matryer/bitbar-plugins/blob/master/System/memusage.5s.py</xbar.abouturl>
-
+import os
+import sys
 import subprocess
 import re
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument('action', nargs='?')
+args = parser.parse_args()
+
+if args.action == 'openActivityMonitor':
+    subprocess.Popen(['open', '-a', 'Activity Monitor'])
+    sys.exit(0)
 
 # Get process info
 ps = subprocess.Popen(['ps', '-caxm', '-orss,comm'], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
@@ -44,3 +54,7 @@ for row in range(1,len(vmLines)-2):
 # print('Real Mem Total (ps):\t%.3f MB' % ( rssTotal/1024/1024 ))
 
 print '%.1f GB' % ( rssTotal/1024/1024/1024 )
+
+print '---'
+print "Open Activity Monitor| bash='%s' param1=openActivityMonitor terminal=false" \
+    % (os.path.realpath(__file__))
