@@ -61,10 +61,7 @@ render() {
         echo '---'
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
         $BREW_BIN cask outdated \
-            | while read line; do
-                # $line: 'atom 1.2 != 3.4'
-                awk '{out=$1" > "$4" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}' <<< $line
-            done
+            | awk '{out="^ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
             # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
         echo "↑ Brew Cask Upgrade | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
     fi
