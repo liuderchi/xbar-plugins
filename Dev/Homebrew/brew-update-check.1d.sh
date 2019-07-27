@@ -6,6 +6,8 @@
 # ⚠️ When first use this plugin user need to customize $PLUGIN_DIR
 PLUGIN_DIR="$HOME/bitbar-plugins/.activated-plugins/"
 WARN_THRESHOLD_DAYS=5
+WARN_COLOR='#fbbc05'
+SIZE_LARGE='18'  # default font size 14
 ICON_DEFAULT='.'
 ICON_ALERT='🍺'
 
@@ -44,30 +46,32 @@ render() {
     if (( ($NOW - $LAST_UPDATE) / (24*60*60) > $WARN_THRESHOLD_DAYS )); then
         echo $ICON_ALERT
         echo '---'
-        echo 'Brew is out of date'
-        echo "↓ Brew Update | bash='$0' param1=brewUpdate terminal=false"
+        echo "↓ Brew Update | bash='$0' param1=brewUpdate terminal=false color=$WARN_COLOR"
     else
         echo $ICON_DEFAULT
         echo '---'
         if (( ($NOW - $LAST_UPDATE) / (24*60*60) >= 1)); then
             echo "Brew updated $(( ($NOW - $LAST_UPDATE) / (24*60*60) )) days ago"
         else
-            echo 'Brew updated today'
+            echo '✅ Brew updated today'
         fi
     fi
 
     # show outdated
     if (( $OUTDATED_FORMULAE_COUNT > 0 )); then
         echo '---'
-        echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): "
-        $BREW_BIN outdated
-        echo "↑ Brew Upgrade | bash='$0' param1=brewUpgrade terminal=false"
+        echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): | color=gray"
+        $BREW_BIN outdated \
+            | while read line; do echo "$line | color=gray"; done
+        echo "↑ Brew Upgrade | bash='$0' param1=brewUpgrade terminal=true color=$WARN_COLOR"
     fi
     if (( $OUTDATED_CASKS_COUNT > 0 )); then
         echo '---'
-        echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): "
-        $BREW_BIN cask outdated  # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-        echo "↑ Upgrade All Casks | bash='$0' param1=brewCaskUpgrade terminal=false"
+        echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
+        $BREW_BIN cask outdated \
+            | while read line; do echo "$line | color=gray"; done
+            # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
+        echo "↑ Upgrade All Casks | bash='$0' param1=brewCaskUpgrade terminal=true color=$WARN_COLOR"
     fi
 }
 
