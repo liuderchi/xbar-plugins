@@ -32,14 +32,6 @@ if [ "$1" == 'brewUpdate' ]; then
     )
     exit
 fi
-if [ "$1" == 'brewUpgrade' ]; then
-    $BREW_BIN upgrade
-    exit
-fi
-if [ "$1" == 'brewCaskUpgrade' ]; then
-    $BREW_BIN cask upgrade
-    exit
-fi
 
 render() {
     # icon, plugin status
@@ -63,15 +55,18 @@ render() {
         echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): | color=gray"
         $BREW_BIN outdated \
             | while read line; do echo "$line | color=gray"; done
-        echo "↑ Brew Upgrade | bash='$0' param1=brewUpgrade terminal=true color=$WARN_COLOR"
+        echo "↑ Brew Upgrade | bash=brew param1=upgrade color=$WARN_COLOR"
     fi
     if (( $OUTDATED_CASKS_COUNT > 0 )); then
         echo '---'
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
         $BREW_BIN cask outdated \
-            | while read line; do echo "$line | color=gray"; done
+            | while read line; do
+                # $line: 'atom 1.2 != 3.4'
+                awk '{out=$1" > "$4" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}' <<< $line
+            done
             # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-        echo "↑ Brew Cask Upgrade | bash='$0' param1=brewCaskUpgrade terminal=true color=$WARN_COLOR"
+        echo "↑ Brew Cask Upgrade | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
     fi
 }
 
