@@ -32,10 +32,18 @@ brcog() {
     cur_vers_list=$(echo "$cur_vers" \
     | tr '\n' ' ' | sed -e 's/ /, /g; s/, $//')
     if [ "$new_ver" != "$latest_cur_ver" ]; then
+      # TODO add black list for not showing (use in app upgrade, e.g. chrome canary)
       echo "$formula ($cur_vers_list) < $new_ver"
     fi
   done
 }
+
+renderRefreshButton() {
+    # Refresh this plugin
+    echo '---'
+    echo "Refresh | refresh=true"
+}
+
 
 # ⚠️ When first use this plugin user need to customize $PLUGIN_DIR
 PLUGIN_DIR="$HOME/bitbar-plugins/.activated-plugins"
@@ -47,17 +55,13 @@ ICON_ALERT='🍺'
 
 BREW_BIN='/usr/local/bin/brew'
 BREW_UPDATE_CHECK_FLAG="$PLUGIN_DIR/.BREW_UPDATE_CHECK_FLAG"
+BREW_TOGGLE_GREEDY="$PLUGIN_DIR/.BREW_TOGGLE_GREEDY"
 
 OUTDATED_FORMULAE_COUNT=$($BREW_BIN outdated | wc -l)
-# OUTDATED_CASKS_COUNT=$($BREW_BIN cask outdated | wc -l)
-OUTDATED_CASKS_COUNT=$(brcog | wc -l)
+OUTDATED_CASKS_COUNT='0'
 
 NOW=$(date '+%s')  # TIMES in UNIX TIMESTAMP
 LAST_UPDATE='0'
-if [[ -f "$BREW_UPDATE_CHECK_FLAG" ]]; then
-    LAST_UPDATE=$(date -r $BREW_UPDATE_CHECK_FLAG '+%s')
-fi
-
 
 # Handle Menu Item Action
 if [ "$1" == 'brewUpdate' ]; then
@@ -66,6 +70,25 @@ if [ "$1" == 'brewUpdate' ]; then
         touch $BREW_UPDATE_CHECK_FLAG  # create file at plugin directory
     )
     exit
+fi
+if [ "$1" == 'toggle' ]; then
+    TOGGLE_FILE="$PLUGIN_DIR/.BREW_TOGGLE_$2"
+    if [[ -f $TOGGLE_FILE ]]; then
+        rm -f $TOGGLE_FILE
+    else
+        touch $TOGGLE_FILE
+    fi
+    exit
+fi
+
+# Conditionally set variable values
+if [[ -f $BREW_TOGGLE_GREEDY ]]; then
+    OUTDATED_CASKS_COUNT=$(brcog | wc -l)
+else
+    OUTDATED_CASKS_COUNT=$($BREW_BIN cask outdated | wc -l)
+fi
+if [[ -f "$BREW_UPDATE_CHECK_FLAG" ]]; then
+    LAST_UPDATE=$(date -r $BREW_UPDATE_CHECK_FLAG '+%s')
 fi
 
 
@@ -96,9 +119,26 @@ render() {
     if (( $OUTDATED_CASKS_COUNT > 0 )); then
         echo '---'
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
-        # parsing `$BREW_BIN cask outdated --greedy` has UNEXPECTED result
-        brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
-        echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+
+        if [[ -f $BREW_TOGGLE_GREEDY ]]; then
+            # parsing `$BREW_BIN cask outdated --greedy` has UNEXPECTED result
+            brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
+        else
+            $BREW_BIN cask outdated \
+                | awk '{out="^ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
+                # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
+            echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+        fi
+    fi
+
+    renderRefreshButton
+
+    # Render greedy mode status
+    echo '---'
+    if [[ -f $BREW_TOGGLE_GREEDY ]]; then
+        echo "Greedy Mode is On 🍏| bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true"
+    else
+        echo "Greedy Mode is Off | bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true color=gray"
     fi
 }
 
