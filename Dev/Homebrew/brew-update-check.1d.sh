@@ -97,7 +97,7 @@ render() {
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
         # parsing `$BREW_BIN cask outdated --greedy` has UNEXPECTED result
         brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
-        echo "↑ Brew Cask Upgrade | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+        echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
     fi
 }
 
