@@ -33,6 +33,41 @@ if [ "$1" == 'brewUpdate' ]; then
     exit
 fi
 
+# brew cask outdated --greedy with parsable output
+# https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
+brcog() {
+  # Resolve the CASKROOM value, supporting its customization
+  # with the HOMEBREW_CASK_OPTS environment variable
+  local CASKROOM=/opt/homebrew-cask/Caskroom
+  if [ -n "$HOMEBREW_CASK_OPTS" ]; then
+    opts=($HOMEBREW_CASK_OPTS)
+    for opt in "${opts[@]}"; do
+      room=$(echo "$opt" | sed -ne 's/^--caskroom=//p')
+      if [ -n "$room" ]; then
+        CASKROOM=$room
+        break
+      fi
+    done
+  fi
+
+  for formula in $($BREW_BIN cask list | grep -Fv '(!)'); do
+    info=$($BREW_BIN cask info $formula | sed -ne '1,/^From:/p')
+    new_ver=$(echo "$info" | head -n 1 | cut -d' ' -f 2)
+    cur_vers=$(echo "$info" \
+    | grep '^/usr/local/Caskroom' \
+    | cut -d' ' -f 1 \
+    | cut -d/ -f 6)
+    latest_cur_ver=$(echo "$cur_vers" \
+    | tail -n 1)
+    cur_vers_list=$(echo "$cur_vers" \
+    | tr '\n' ' ' | sed -e 's/ /, /g; s/, $//')
+    if [ "$new_ver" != "$latest_cur_ver" ]; then
+      echo "$formula ($cur_vers_list) < $new_ver"
+    fi
+  done
+}
+
+
 render() {
     # icon, plugin status
     if (( ($NOW - $LAST_UPDATE) / (24*60*60) > $WARN_THRESHOLD_DAYS )); then
@@ -60,9 +95,8 @@ render() {
     if (( $OUTDATED_CASKS_COUNT > 0 )); then
         echo '---'
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
-        $BREW_BIN cask outdated \
-            | awk '{out="^ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
-            # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
+        # parsing `$BREW_BIN cask outdated --greedy` has UNEXPECTED result
+        brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
         echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
     fi
 }
