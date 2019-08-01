@@ -65,6 +65,9 @@ render() {
             # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
         echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
     fi
+
+    echo '---'
+    echo "Refresh | refresh=true"
 }
 
 render
