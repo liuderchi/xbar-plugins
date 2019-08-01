@@ -13,6 +13,7 @@ ICON_ALERT='🍺'
 
 BREW_BIN='/usr/local/bin/brew'
 BREW_UPDATE_CHECK_FLAG="$PLUGIN_DIR/.BREW_UPDATE_CHECK_FLAG"
+BREW_TOGGLE_GREEDY="$PLUGIN_DIR/.BREW_TOGGLE_GREEDY"
 
 OUTDATED_FORMULAE_COUNT=$($BREW_BIN outdated | wc -l)
 OUTDATED_CASKS_COUNT=$($BREW_BIN cask outdated | wc -l)
@@ -30,6 +31,15 @@ if [ "$1" == 'brewUpdate' ]; then
         $BREW_BIN update && \
         touch $BREW_UPDATE_CHECK_FLAG  # create file at plugin directory
     )
+    exit
+fi
+if [ "$1" == 'toggle' ]; then
+    TOGGLE_FILE="$PLUGIN_DIR/.BREW_TOGGLE_$2"
+    if [[ -f $TOGGLE_FILE ]]; then
+        rm -f $TOGGLE_FILE
+    else
+        touch $TOGGLE_FILE
+    fi
     exit
 fi
 
@@ -63,11 +73,21 @@ render() {
         $BREW_BIN cask outdated \
             | awk '{out="^ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
             # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-        echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+        if [[ ! -f $BREW_TOGGLE_GREEDY ]]; then
+            echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+        fi
     fi
 
     echo '---'
     echo "Refresh | refresh=true"
+
+    # Render greedy mode
+    echo '---'
+    if [[ -f $BREW_TOGGLE_GREEDY ]]; then
+        echo "Greedy Mode is On 🍏| bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true"
+    else
+        echo "Greedy Mode is Off | bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true color=gray"
+    fi
 }
 
 render
