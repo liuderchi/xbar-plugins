@@ -92,7 +92,7 @@ if [[ -f "$BREW_UPDATE_CHECK_FLAG" ]]; then
 fi
 
 
-render() {
+renderAll() {
     # icon, plugin status
     if (( ($NOW - $LAST_UPDATE) / (24*60*60) > $WARN_THRESHOLD_DAYS )); then
         echo $ICON_ALERT
@@ -142,4 +142,4 @@ render() {
     fi
 }
 
-render
+renderAll
