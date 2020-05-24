@@ -13,6 +13,8 @@ if [ "$1" == "activitymonitor" ]; then
 	exit
 fi
 
+COLOR='#555555'
+THRESHOLD=50
 IDLE=$(top -F -R -l3 | grep "CPU usage" | tail -1 | egrep -o '[0-9]{0,3}\.[0-9]{0,2}% idle' | sed 's/% idle//')
 
 USED=$(echo 100 - "$IDLE" | bc | xargs printf "%.f\n")
@@ -23,7 +25,11 @@ if [ ${#USED} == 2 ] || [ ${#USED} == 1 ]; then
 	printf '%*.*s' 0 $((2 - ${#USED})) "$pad"
 fi
 
-echo "$USED %"
+if [ "$USED" -gt "$THRESHOLD" ] ; then
+  COLOR="#ff9f0a"
+fi
+
+echo "$USED %| size=13 color=$COLOR"
 
 echo "---"
 echo "Open Activity Monitor| bash='$0' param1=activitymonitor terminal=false"

@@ -50,7 +50,7 @@ PLUGIN_DIR="$HOME/bitbar-plugins/.activated-plugins"
 WARN_THRESHOLD_DAYS=5
 WARN_COLOR='#fbbc05'
 SIZE_LARGE='18'  # default font size 14
-ICON_DEFAULT='.'
+ICON_DEFAULT='.| size=13 color=#555555'
 ICON_ALERT='🍺'
 
 BREW_BIN='/usr/local/bin/brew'
