@@ -52,7 +52,14 @@ for row in range(1,len(vmLines)-2):
 # print 'Free Memory:\t\t%d MB' % ( vmStats["Pages free"]/1024/1024 )
 # print 'Real Mem Total (ps):\t%.3f MB' % ( rssTotal/1024/1024 )
 
-print '%.1f GB' % ( rssTotal/1024/1024/1024 )
+COLOR = '#555555'
+THRESHOLD = 12
+
+result = rssTotal/1024/1024/1024
+if result >= THRESHOLD:
+    COLOR = '#ff9f0a'
+
+print '%.1f GB' % (result) + '| size=13 color=' + COLOR
 
 print '---'
 print "Open Activity Monitor| bash='%s' param1=openActivityMonitor terminal=false" \
