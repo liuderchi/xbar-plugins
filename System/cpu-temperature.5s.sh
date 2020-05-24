@@ -10,9 +10,21 @@
 # One-liner:
 # curl -LO http://www.eidac.de/smcfancontrol/smcfancontrol_2_4.zip && unzip -d temp_dir_smc smcfancontrol_2_4.zip && cp temp_dir_smc/smcFanControl.app/Contents/Resources/smc /usr/local/bin/smc ; rm -rf temp_dir_smc smcfancontrol_2_4.zip
 
+PLUGIN_DIR="$HOME/bitbar-plugins/.activated-plugins"
+# linked from smcFanControl
+# ln -s /Applications/smcFanControl.app/Contents/Resources/smc .activated-plugins/.bin
+SMC_BIN="$PLUGIN_DIR/.bin/smc"
+
+if [[ ! -f "$SMC_BIN" ]]; then
+  echo "⚠️"
+  echo "Smc binary is not found in $SMC_BIN"
+  return
+fi
+
+COLOR='#555555'
 FAHRENHEIT=false
-TEMPERATURE_WARNING_LIMIT=80
-TEMPERATURE=$(/usr/local/bin/smc -k TC0P -r | sed 's/.*bytes \(.*\))/\1/' |sed 's/\([0-9a-fA-F]*\)/0x\1/g' | perl -ne 'chomp; ($low,$high) = split(/ /); print (((hex($low)*256)+hex($high))/4/64); print "\n";')
+TEMPERATURE_WARNING_LIMIT=70
+TEMPERATURE=$($SMC_BIN -k TC0P -r | sed 's/.*bytes \(.*\))/\1/' |sed 's/\([0-9a-fA-F]*\)/0x\1/g' | perl -ne 'chomp; ($low,$high) = split(/ /); print (((hex($low)*256)+hex($high))/4/64); print "\n";')
 TEMP_INTEGER=${TEMPERATURE%.*}
 
 if $FAHRENHEIT ; then
@@ -23,8 +35,7 @@ else
 fi
 
 if [ "$TEMP_INTEGER" -gt "$TEMPERATURE_WARNING_LIMIT" ] ; then
-  ICON="🔥"
-else
-  ICON=""
+  COLOR="#ff9f0a"
 fi
-echo "$ICON${TEMP_INTEGER}$LABEL| size=12"
+
+echo "$ICON${TEMP_INTEGER} $LABEL| size=13 color=$COLOR"
