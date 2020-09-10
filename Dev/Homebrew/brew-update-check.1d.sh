@@ -5,9 +5,9 @@ set -e
 # show brew update check status: last update time
 #   prompt user to update brew if outdated
 
-# brew cask outdated --greedy with parsable output
+# brew outdated --cask --greedy with parsable output
 # https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-brcog() {
+brocg() {
   # Resolve the CASKROOM value, supporting its customization
   # with the HOMEBREW_CASK_OPTS environment variable
   local CASKROOM=/opt/homebrew-cask/Caskroom
@@ -72,7 +72,7 @@ BREW_BIN='/usr/local/bin/brew'
 BREW_UPDATE_CHECK_FLAG="$PLUGIN_DIR/.BREW_UPDATE_CHECK_FLAG"
 BREW_TOGGLE_GREEDY="$PLUGIN_DIR/.BREW_TOGGLE_GREEDY"
 
-OUTDATED_FORMULAE_COUNT=$($BREW_BIN outdated | wc -l)
+OUTDATED_FORMULAE_COUNT=$($BREW_BIN outdated --formula | wc -l)
 OUTDATED_CASKS_COUNT='0'
 
 NOW=$(date '+%s')  # TIMES in UNIX TIMESTAMP
@@ -98,9 +98,9 @@ fi
 
 # Conditionally set variable values
 if [[ -f $BREW_TOGGLE_GREEDY ]]; then
-    OUTDATED_CASKS_COUNT=$(brcog | wc -l)
+    OUTDATED_CASKS_COUNT=$(brocg | wc -l)
 else
-    OUTDATED_CASKS_COUNT=$($BREW_BIN cask outdated | wc -l)
+    OUTDATED_CASKS_COUNT=$($BREW_BIN outdated --cask | wc -l)
 fi
 if [[ -f "$BREW_UPDATE_CHECK_FLAG" ]]; then
     LAST_UPDATE=$(date -r $BREW_UPDATE_CHECK_FLAG '+%s')
@@ -127,7 +127,7 @@ renderAll() {
     if (( $OUTDATED_FORMULAE_COUNT > 0 )); then
         echo '---'
         echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): | color=gray"
-        $BREW_BIN outdated \
+        $BREW_BIN outdated --formula \
             | while read formula; \
             do
                 echo "∙ $formula | bash=brew param1=upgrade param2=--formula param3=$formula terminal=true color=gray"
@@ -139,10 +139,10 @@ renderAll() {
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
 
         if [[ -f $BREW_TOGGLE_GREEDY ]]; then
-            # parsing `$BREW_BIN cask outdated --greedy` has UNEXPECTED result
-            brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
+            # parsing `$BREW_BIN outdated --cask --greedy` has UNEXPECTED result
+            brocg | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
         else
-            $BREW_BIN cask outdated \
+            $BREW_BIN outdated --cask \
                 | awk '{out="∙ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
                 # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
             echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
