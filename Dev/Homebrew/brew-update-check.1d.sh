@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # show brew update check status: last update time
 #   prompt user to update brew if outdated
 
@@ -40,8 +42,21 @@ brcog() {
 
 renderRefreshButton() {
     # Refresh this plugin
-    echo '---'
-    echo "Refresh | refresh=true"
+    echo "♻️ Refresh | refresh=true"
+}
+
+renderDoctorButton() {
+    # Render brew doctor
+    echo "Brew doctor | bash=brew param1=doctor terminal=true"
+}
+
+renderGreedyModeButton() {
+    # Render greedy mode status
+    if [[ -f $BREW_TOGGLE_GREEDY ]]; then
+        echo "Greedy Mode is On 🍏| bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true"
+    else
+        echo "Greedy Mode is Off | bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true color=gray"
+    fi
 }
 
 
@@ -102,7 +117,7 @@ renderAll() {
         echo $ICON_DEFAULT
         echo '---'
         if (( ($NOW - $LAST_UPDATE) / (24*60*60) >= 1)); then
-            echo "Brew updated $(( ($NOW - $LAST_UPDATE) / (24*60*60) )) days ago"
+            echo "Brew updated $(( ($NOW - $LAST_UPDATE) / (24*60*60) )) day(s) ago"
         else
             echo 'Brew updated today'
         fi
@@ -125,21 +140,18 @@ renderAll() {
             brcog | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
         else
             $BREW_BIN cask outdated \
-                | awk '{out="^ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
+                | awk '{out="∙ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
                 # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
             echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
         fi
     fi
 
-    renderRefreshButton
-
-    # Render greedy mode status
     echo '---'
-    if [[ -f $BREW_TOGGLE_GREEDY ]]; then
-        echo "Greedy Mode is On 🍏| bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true"
-    else
-        echo "Greedy Mode is Off | bash=$0 param1=toggle param2=GREEDY terminal=false refresh=true color=gray"
-    fi
+    renderRefreshButton
+    echo '---'
+    renderDoctorButton
+    renderGreedyModeButton
+
 }
 
 renderAll
