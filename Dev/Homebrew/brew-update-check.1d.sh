@@ -128,7 +128,10 @@ renderAll() {
         echo '---'
         echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): | color=gray"
         $BREW_BIN outdated --formula \
-            | while read line; do echo "$line | color=gray"; done
+            | while read formula; \
+            do
+                echo "∙ $formula | bash=brew param1=upgrade param2=--formula param3=$formula terminal=true color=gray"
+            done
         echo "↑ Brew Upgrade | bash=brew param1=upgrade terminal=true color=$WARN_COLOR"
     fi
     if (( $OUTDATED_CASKS_COUNT > 0 )); then
