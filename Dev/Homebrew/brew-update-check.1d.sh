@@ -22,8 +22,8 @@ brocg() {
     done
   fi
 
-  for formula in $($BREW_BIN cask list | grep -Fv '(!)'); do
-    info=$($BREW_BIN cask info $formula | sed -ne '1,/^From:/p')
+  for formula in $($BREW_BIN list --cask | grep -Fv '(!)'); do
+    info=$($BREW_BIN info --cask $formula | sed -ne '1,/^From:/p')
     new_ver=$(echo "$info" | head -n 1 | cut -d' ' -f 2)
     cur_vers=$(echo "$info" \
     | grep '^/usr/local/Caskroom' \
@@ -137,12 +137,12 @@ renderAll() {
 
         if [[ -f $BREW_TOGGLE_GREEDY ]]; then
             # parsing `$BREW_BIN outdated --cask --greedy` has UNEXPECTED result
-            brocg | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=cask param2=reinstall param3="$1" length=40 terminal=true color=gray"'
+            brocg | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=reinstall param2=--cask param3="$1" length=40 terminal=true color=gray"'
         else
             $BREW_BIN outdated --cask \
-                | awk '{out="∙ "$1" | bash=brew param1=cask param2=reinstall param3="$1" terminal=true color=gray"; print out;}'
+                | awk '{out="∙ "$1" | bash=brew param1=reinstall param2=--cask param3="$1" terminal=true color=gray"; print out;}'
                 # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-            echo "↑ Upgrade All Casks | bash=brew param1=cask param2=upgrade terminal=true color=$WARN_COLOR"
+            echo "↑ Upgrade All Casks | bash=brew param1=upgrade param2=--cask terminal=true color=$WARN_COLOR"
         fi
     fi
 
