@@ -1,53 +1,13 @@
 #!/bin/bash
 
-set -e
+set -Eeo pipefail  # do not set -u to avoid unbound var
 
 # show brew update check status: last update time
 #   prompt user to update brew if outdated
 
-# brew outdated --cask --greedy with parsable output
-# https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-brocg() {
-  # Resolve the CASKROOM value, supporting its customization
-  # with the HOMEBREW_CASK_OPTS environment variable
-  local CASKROOM=/opt/homebrew-cask/Caskroom
-  if [ -n "$HOMEBREW_CASK_OPTS" ]; then
-    opts=($HOMEBREW_CASK_OPTS)
-    for opt in "${opts[@]}"; do
-      room=$(echo "$opt" | sed -ne 's/^--caskroom=//p')
-      if [ -n "$room" ]; then
-        CASKROOM=$room
-        break
-      fi
-    done
-  fi
-
-  for formula in $($BREW_BIN list --cask | grep -Fv '(!)'); do
-    info=$($BREW_BIN info --cask $formula | sed -ne '1,/^From:/p')
-    new_ver=$(echo "$info" | head -n 1 | cut -d' ' -f 2)
-    cur_vers=$(echo "$info" \
-    | grep '^/usr/local/Caskroom' \
-    | cut -d' ' -f 1 \
-    | cut -d/ -f 6)
-    latest_cur_ver=$(echo "$cur_vers" \
-    | tail -n 1)
-    cur_vers_list=$(echo "$cur_vers" \
-    | tr '\n' ' ' | sed -e 's/ /, /g; s/, $//')
-    if [ "$new_ver" != "$latest_cur_ver" ]; then
-      # TODO add black list for not showing (use in app upgrade, e.g. chrome canary)
-      echo "$formula ($cur_vers_list) < $new_ver"
-    fi
-  done
-}
-
-renderRefreshButton() {
-    # Refresh this plugin
-    echo "♻️ Refresh | refresh=true"
-}
-
 renderDoctorButton() {
     # Render brew doctor
-    echo "Brew doctor | bash=brew param1=doctor terminal=true"
+    echo "Brew doctor | bash=$0 param1=openTerminal param2='brew doctor' terminal=false"
 }
 
 renderGreedyModeButton() {
@@ -61,12 +21,11 @@ renderGreedyModeButton() {
 
 
 # ⚠️ When first use this plugin user need to customize $PLUGIN_DIR
-PLUGIN_DIR="$HOME/bitbar-plugins/.activated-plugins"
+PLUGIN_DIR="$HOME/Library/Application Support/xbar/plugins"
 WARN_THRESHOLD_DAYS=5
 WARN_COLOR='#fbbc05'
-SIZE_LARGE='18'  # default font size 14
-ICON_DEFAULT='.| size=13 color=#555555'
-ICON_ALERT='🍺'
+ICON_DEFAULT='.| color=gray'
+ICON_ALERT='🍺| size=12'  # default font size 13
 
 BREW_BIN='/usr/local/bin/brew'
 BREW_UPDATE_CHECK_FLAG="$PLUGIN_DIR/.BREW_UPDATE_CHECK_FLAG"
@@ -79,78 +38,90 @@ NOW=$(date '+%s')  # TIMES in UNIX TIMESTAMP
 LAST_UPDATE='0'
 
 # Handle Menu Item Action
+if [ "$1" == 'openTerminal' ]; then
+  cmd=$2
+  if [ "$(osascript -e 'application "Terminal" is running')" = "false" ]; then
+    osascript -e 'tell application "Terminal" to activate'
+  else
+    osascript -e 'tell application "System Events" to tell process "Terminal" to set frontmost to true'
+    osascript -e 'tell application "System Events" to keystroke "t" using command down'
+  fi
+  osascript -e "tell application \"Terminal\" to do script \"$cmd\" in window 1"
+fi
 if [ "$1" == 'brewUpdate' ]; then
-    (cd $PLUGIN_DIR && \
-        $BREW_BIN update && \
-        touch $BREW_UPDATE_CHECK_FLAG  # create file at plugin directory
+    (cd "$PLUGIN_DIR" && \
+        "$BREW_BIN" update && \
+        touch "$BREW_UPDATE_CHECK_FLAG"  # create file at plugin directory
     )
     exit
 fi
 if [ "$1" == 'toggle' ]; then
     TOGGLE_FILE="$PLUGIN_DIR/.BREW_TOGGLE_$2"
     if [[ -f $TOGGLE_FILE ]]; then
-        rm -f $TOGGLE_FILE
+        rm -f "$TOGGLE_FILE"
     else
-        touch $TOGGLE_FILE
+        touch "$TOGGLE_FILE"
     fi
     exit
 fi
 
 # Conditionally set variable values
 if [[ -f $BREW_TOGGLE_GREEDY ]]; then
-    OUTDATED_CASKS_COUNT=$(brocg | wc -l)
+    OUTDATED_CASKS_COUNT=$($BREW_BIN outdated --cask --greedy | wc -l)
 else
     OUTDATED_CASKS_COUNT=$($BREW_BIN outdated --cask | wc -l)
 fi
 if [[ -f "$BREW_UPDATE_CHECK_FLAG" ]]; then
-    LAST_UPDATE=$(date -r $BREW_UPDATE_CHECK_FLAG '+%s')
+    LAST_UPDATE=$(date -r "$BREW_UPDATE_CHECK_FLAG" '+%s')
 fi
 
 
 renderAll() {
     # icon, plugin status
-    if (( ($NOW - $LAST_UPDATE) / (24*60*60) > $WARN_THRESHOLD_DAYS )); then
-        echo $ICON_ALERT
+    if (( ("$NOW" - "$LAST_UPDATE") / (24*60*60) > "$WARN_THRESHOLD_DAYS" )); then
+        echo "$ICON_ALERT"
         echo '---'
-        echo "↓ Brew Update | bash='$0' param1=brewUpdate terminal=false color=$WARN_COLOR refresh=true"
+        echo "↓ Brew update | bash=$0 param1=brewUpdate terminal=false color=$WARN_COLOR refresh=true"
     else
-        echo $ICON_DEFAULT
+        echo "$ICON_DEFAULT"
         echo '---'
-        if (( ($NOW - $LAST_UPDATE) / (24*60*60) >= 1)); then
-            echo "Brew updated $(( ($NOW - $LAST_UPDATE) / (24*60*60) )) day(s) ago"
+        if (( ("$NOW" - "$LAST_UPDATE") / (24*60*60) >= 1)); then
+            echo "Brew updated $(( (NOW - LAST_UPDATE) / (24*60*60) )) day(s) ago"
         else
             echo 'Brew updated today'
         fi
     fi
 
     # show outdated
-    if (( $OUTDATED_FORMULAE_COUNT > 0 )); then
+    if (( "$OUTDATED_FORMULAE_COUNT" > 0 )); then
         echo '---'
         echo "$OUTDATED_FORMULAE_COUNT Outdated Formula(s): | color=gray"
         $BREW_BIN outdated --formula \
-            | while read formula; \
+            | while read -r formula; \
             do
-                echo "∙ $formula | bash=brew param1=upgrade param2=--formula param3=$formula terminal=true color=gray"
+                echo "∙ $formula | bash=$0 param1=openTerminal param2='brew upgrade --formula $formula' terminal=false color=gray"
             done
-        echo "↑ Brew Upgrade | bash=brew param1=upgrade param2=--formula terminal=true color=$WARN_COLOR"
+        echo "↑ Brew Upgrade | bash=$0 param1=openTerminal param2='brew upgrade --formula' terminal=false color=$WARN_COLOR"
     fi
-    if (( $OUTDATED_CASKS_COUNT > 0 )); then
+    if (( "$OUTDATED_CASKS_COUNT" > 0 )); then
         echo '---'
         echo "$OUTDATED_CASKS_COUNT Outdated Cask(s): | color=gray"
 
         if [[ -f $BREW_TOGGLE_GREEDY ]]; then
-            # parsing `$BREW_BIN outdated --cask --greedy` has UNEXPECTED result
-            brocg | awk '$0="∙ "$1" ↑ "$4" | bash=brew param1=reinstall param2=--cask param3="$1" length=40 terminal=true color=gray"'
+            $BREW_BIN outdated --cask --greedy \
+                | while read -r cask; \
+                do
+                    nextVersion=$(echo "$cask" | xargs $BREW_BIN info --cask | head -n 1 | cut -d' ' -f 2)
+                    echo "∙ $cask ↑ $nextVersion | bash=$0 param1=openTerminal param2='brew reinstall --cask $cask' terminal=false color=gray"
+                done
         else
             $BREW_BIN outdated --cask \
-                | awk '{out="∙ "$1" | bash=brew param1=reinstall param2=--cask param3="$1" terminal=true color=gray"; print out;}'
+                | awk "\$0=\"∙ \"\$1\" ↑ | bash=$0 param1=openTerminal param2='brew reinstall --cask \"\$1\"' terminal=false color=gray\""
                 # c.f. https://github.com/bgandon/brew-cask-outdated/blob/master/brew-cask-outdated.sh
-            echo "↑ Upgrade All Casks | bash=brew param1=upgrade param2=--cask terminal=true color=$WARN_COLOR"
+            echo "↑ Upgrade All Casks | bash=$0 param1=openTerminal param2='brew upgrade --cask' terminal=false color=$WARN_COLOR"
         fi
     fi
 
-    echo '---'
-    renderRefreshButton
     echo '---'
     renderDoctorButton
     renderGreedyModeButton
