@@ -27,7 +27,7 @@ WARN_COLOR='#fbbc05'
 ICON_DEFAULT='.| color=gray'
 ICON_ALERT='🍺| size=12'  # default font size 13
 
-BREW_BIN='/usr/local/bin/brew'
+BREW_BIN='/opt/homebrew/bin/brew'  # new brew binary path for m1 macOS
 BREW_UPDATE_CHECK_FLAG="$PLUGIN_DIR/.BREW_UPDATE_CHECK_FLAG"
 BREW_TOGGLE_GREEDY="$PLUGIN_DIR/.BREW_TOGGLE_GREEDY"
 
