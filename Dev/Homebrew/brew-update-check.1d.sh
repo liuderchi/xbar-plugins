@@ -83,12 +83,13 @@ renderAll() {
         echo '---'
         echo "↓ Brew update | bash=$0 param1=brewUpdate terminal=false color=$WARN_COLOR refresh=true"
     else
+        brewUpdateAction="| bash=$0 param1=openTerminal param2='brew update' terminal=false color=gray"
         echo "$ICON_DEFAULT"
         echo '---'
         if (( ("$NOW" - "$LAST_UPDATE") / (24*60*60) >= 1)); then
-            echo "Brew updated $(( (NOW - LAST_UPDATE) / (24*60*60) )) day(s) ago"
+            echo "Brew updated $(( (NOW - LAST_UPDATE) / (24*60*60) )) day(s) ago $brewUpdateAction"
         else
-            echo 'Brew updated today'
+            echo "Brew updated today $brewUpdateAction"
         fi
     fi
 
